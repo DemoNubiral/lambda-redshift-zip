@@ -39,11 +39,12 @@ def write_log(file, text, bucket_name):
 
 
 
-def execute_query( query, database, workgroup, bucket_name, key_file):
+def execute_query( query, database, workgroup, bucket_name, key_file, user):
     try:
         write_log(key_file, "execute_query", bucket_name)
         logger.info("execute_query")
         response = client.execute_statement(
+            DbUser=user,
             Database=database,
             Sql=query,
             WorkgroupName=workgroup
@@ -57,12 +58,12 @@ def execute_query( query, database, workgroup, bucket_name, key_file):
         return {"statusCode": 500, "error": str(e)}
 
 
-def create_table( table_creation_query, workgroup_name, dbname, bucket_name, key_file):
+def create_table( table_creation_query, workgroup_name, dbname, bucket_name, key_file, user):
     try:
         write_log(key_file, "create_table", bucket_name)
         logger.info("create_table")
-        response = execute_query(table_creation_query, dbname, workgroup_name, bucket_name, key_file)
-        if response['HTTPStatusCode'] == 200:
+        response = execute_query(table_creation_query, dbname, workgroup_name, bucket_name, key_file, user)
+        if response["ResponseMetadata"]["HTTPStatusCode"] == 200:
             logger.info("Se crea la tabla satisfactoriamente")
             write_log(key_file, f"response: {response}, se crea la tabla satisfactoriamente", bucket_name)
             return response
@@ -99,7 +100,7 @@ def load_table( create_table_redshift, connection, bucket_name, key_file):
         print(f"Ocurrió un error: {e}")
 
 
-def parse_env_file( file_path, connection, workgroup_name, dbname, bucket_name, key_file):
+def parse_env_file( file_path, connection, workgroup_name, dbname, bucket_name, key_file, user):
     write_log(key_file, "parse_env_file", bucket_name)
     logger.info("parse_env_file")
     for files in file_path:
@@ -156,10 +157,13 @@ def parse_env_file( file_path, connection, workgroup_name, dbname, bucket_name, 
             write_log(key_file, "Se encontró la sentencia para crear el esquema", bucket_name)
             logger.info(f"create_schema: {create_schema_name}")
             write_log(key_file, f"create_schema: {create_schema_name}", bucket_name)
-            response = execute_query(create_schema_name, dbname, workgroup_name, bucket_name, key_file)
-            if response['HTTPStatusCode'] != 200:
+            response = execute_query(create_schema_name, dbname, workgroup_name, bucket_name, key_file, user)
+            if response["ResponseMetadata"]["HTTPStatusCode"] != 200:
                 logger.error("No se pudo crear el esquema")
                 sys.exit("No se pudo crear el esquema")
+            else:
+                logger.info("Se creó el esquema satisfactoriamente")
+                write_log(key_file, "Se creó el esquema satisfactoriamente", bucket_name)
         else:   
             logger.warning("No se encontró la sentencia para crear el esquema")
             write_log(key_file, "No se encontró la sentencia para crear el esquema", bucket_name)
@@ -169,8 +173,8 @@ def parse_env_file( file_path, connection, workgroup_name, dbname, bucket_name, 
             logger.info("Se encontró la sentencia para crear la tabla")
             write_log(key_file, f"create_table_stmt: {create_table_stmt}", bucket_name)
             logger.info(f"create_table_stmt: {create_table_stmt}")
-            response = create_table(create_table_stmt, workgroup_name, dbname, bucket_name, key_file)
-            if response['HTTPStatusCode'] != 200:
+            response = create_table(create_table_stmt, workgroup_name, dbname, bucket_name, key_file, user)
+            if response["ResponseMetadata"]["HTTPStatusCode"] != 200:
                 logger.error("No se pudo crear la tabla")
                 sys.exit("No se pudo crear la tabla")
         else:
@@ -229,7 +233,7 @@ def main(event, context):
         if files:
             logger.info("Se encontraron archivos en el directorio")
             write_log(key_file, f"Se encontraron archivos en el directorio", bucket_name)
-            parse_env_file(files, connection, workgroup_name, dbname, bucket_name, key_file)  
+            parse_env_file(files, connection, workgroup_name, dbname, bucket_name, key_file, user)  
         else:
             logger.warning("No hay archivos en el directorio")
             write_log(key_file, "No hay archivos en el directorio", bucket_name)
