@@ -53,7 +53,7 @@ def execute_query( query, database, workgroup, bucket_name, key_file, user):
         write_log(key_file, f"response: {response}, se ejecuta la query de creacion de tabla.", bucket_name)
         return response
     except Exception as e:
-        logger.error(f"Ocurrió un error: {e} + {query} + {response}")
+        logger.error(f"Ocurrió un error: {e} + {query}")
         write_log(key_file, f"Ocurrió un error: {e}", bucket_name)
         return {"statusCode": 500, "error": str(e)}
 

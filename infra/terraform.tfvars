@@ -18,7 +18,7 @@ service_lambda = [ {
     "WORKGROUP_NAME" = "kopicloud-workgroup"
 } ]
 
-output_folder = "../code/lambda-code-redshift-cenam.zip"
+output_folder = "../code/lambda_redshift_cenam.zip"
 # source_file = "../code/code-create-tables.py"
 # type_folder = "zip"
 
